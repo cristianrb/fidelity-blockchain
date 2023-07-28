@@ -39,6 +39,7 @@ func (s *Server) setupRouter() {
 	router := gin.Default()
 
 	router.GET("/chain", s.getChain)
+	router.GET("/amount", s.getAmount)
 	router.POST("/transactions", s.createTransaction)
 
 	s.GetBlockchain().Start()
@@ -74,4 +75,15 @@ func (s *Server) createTransaction(ctx *gin.Context) {
 	blockchain.AddTransaction(req.Sender, nil, req.Product, req.Currency, req.Value)
 
 	ctx.Status(http.StatusCreated)
+}
+
+func (s *Server) getAmount(ctx *gin.Context) {
+	blockchain := s.GetBlockchain()
+	bcAddress := ctx.Query("blockchain_address")
+	amount := blockchain.CalculateTotalAmount(bcAddress)
+
+	ctx.JSON(http.StatusOK, AmountResponse{
+		Recipient: bcAddress,
+		Amount:    amount,
+	})
 }

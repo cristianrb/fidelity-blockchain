@@ -6,3 +6,8 @@ type TransactionRequest struct {
 	Currency string  `json:"currency"`
 	Value    float32 `json:"value"`
 }
+
+type AmountResponse struct {
+	Recipient string  `json:"recipient"`
+	Amount    float32 `json:"amount`
+}
