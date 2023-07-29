@@ -2,6 +2,7 @@ package api
 
 import (
 	"github.com/cristianrb/fidelityblockchain/bc"
+	"github.com/cristianrb/fidelityblockchain/utils"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -72,9 +73,17 @@ func (s *Server) createTransaction(ctx *gin.Context) {
 		return
 	}
 
-	blockchain.AddTransaction(req.Sender, nil, req.Product, req.Currency, req.Value)
+	pubKey := utils.PublicKeyFromString(req.SenderPublicKey)
+	signature := utils.SignatureFromString(req.Signature)
+	isCreated := blockchain.AddTransaction(req.SenderBlockchainAddress, nil, req.Product, req.Currency, req.Value, pubKey, signature)
 
-	ctx.Status(http.StatusCreated)
+	if isCreated {
+		ctx.Status(http.StatusCreated)
+		return
+	}
+
+	println(isCreated)
+	ctx.Status(http.StatusBadRequest)
 }
 
 func (s *Server) getAmount(ctx *gin.Context) {

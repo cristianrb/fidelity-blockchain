@@ -1,10 +1,12 @@
 package api
 
 type TransactionRequest struct {
-	Sender   string  `json:"sender"`
-	Product  string  `json:"product"`
-	Currency string  `json:"currency"`
-	Value    float32 `json:"value"`
+	SenderBlockchainAddress string  `json:"sender_blockchain_address"`
+	SenderPublicKey         string  `json:"sender_public_key"`
+	Signature               string  `json:"signature"`
+	Product                 string  `json:"product"`
+	Currency                string  `json:"currency"`
+	Value                   float32 `json:"value"`
 }
 
 type AmountResponse struct {

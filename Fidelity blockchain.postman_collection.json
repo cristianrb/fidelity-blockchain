@@ -1,0 +1,151 @@
+{
+	"info": {
+		"_postman_id": "61b6b238-36bb-42d5-87e7-c1e0da8eea18",
+		"name": "Fidelity blockchain",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Wallet",
+			"item": [
+				{
+					"name": "Create wallet",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"sender\": \"Cristian\",\r\n    \"product\": \"Logitech MX master 3\",\r\n    \"currency\": \"EUR\",\r\n    \"value\": 326.76\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080"
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create transaction",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"sender_private_key\": \"80e5c8ef185f5e2eae59c919e277ea1d0f12c1e532e03bc72d3075d9742cc285\",\r\n    \"sender_public_key\": \"f56e4320d0246ce0054cd731bff7b9bd1076d3f7b8205bfba655dc588daa5e880edee434e31dc4b639b44eef06f874b71be27dde395b77c47cb34d2d196a4c3b\",\r\n    \"sender_blockchain_address\": \"1EYc7xeSFSxtKRtZAcD3ja4UaosynYQ7RY\",\r\n    \"product\": \"Logitech MX master 3\",\r\n    \"currency\": \"EUR\",\r\n    \"value\": 326.76\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/transactions",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"transactions"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Create transaction",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"sender\": \"Cristian\",\r\n    \"product\": \"Logitech MX master 3\",\r\n    \"currency\": \"EUR\",\r\n    \"value\": 326.76\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:5000/transactions",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"transactions"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get chain",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:5000/chain",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"chain"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get amount",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"sender\": \"Cristian\",\r\n    \"product\": \"Logitech MX master 3\",\r\n    \"currency\": \"EUR\",\r\n    \"value\": 100\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:5000/amount?blockchain_address=Cristian",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"amount"
+					],
+					"query": [
+						{
+							"key": "blockchain_address",
+							"value": "Cristian"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
