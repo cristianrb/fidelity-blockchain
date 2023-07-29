@@ -15,12 +15,6 @@ type Signature struct {
 	S *big.Int
 }
 
-type TransactionToVerify struct {
-	Product  string  `json:"product"`
-	Currency string  `json:"currency"`
-	Value    float32 `json:"value"`
-}
-
 func (s *Signature) String() string {
 	return fmt.Sprintf("%064x%064x", s.R, s.S)
 }
@@ -55,7 +49,13 @@ func PrivateKeyFromString(s string, publicKey *ecdsa.PublicKey) *ecdsa.PrivateKe
 	return &ecdsa.PrivateKey{PublicKey: *publicKey, D: &bi}
 }
 
-func VerifySignature(senderPublicKey *ecdsa.PublicKey, s *Signature, t *TransactionToVerify) bool {
+type TransactionToVerify struct {
+	Product  string  `json:"product"`
+	Currency string  `json:"currency"`
+	Value    float32 `json:"value"`
+}
+
+func VerifySignature(senderPublicKey *ecdsa.PublicKey, s *Signature, t any) bool {
 	m, err := json.Marshal(t)
 	if err != nil {
 		return false

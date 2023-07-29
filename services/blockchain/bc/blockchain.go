@@ -75,7 +75,8 @@ func (bc *Blockchain) ProofOfWork() int {
 }
 
 func (bc *Blockchain) Mining() bool {
-	bc.AddTransaction(MINING_SENDER, &bc.BlockChainAddress, MINING_PRODUCT, FC_CURRENCY, MINING_REWARD, nil, nil)
+	t := NewTransaction(MINING_SENDER, bc.BlockChainAddress, MINING_PRODUCT, FC_CURRENCY, MINING_REWARD)
+	bc.AddTransaction(t, nil, nil)
 	nonce := bc.ProofOfWork()
 	previousHash := bc.LastBlock().Hash()
 	bc.CreateBlock(nonce, previousHash)
@@ -88,25 +89,22 @@ func (bc *Blockchain) StartMining() {
 	_ = time.AfterFunc(time.Second*MINING_TIMER_SEC, bc.StartMining)
 }
 
-func (bc *Blockchain) AddTransaction(sender string, recipient *string, product, currency string, value float32, senderPublicKey *ecdsa.PublicKey, signature *utils.Signature) bool {
-	if sender == MINING_SENDER {
-		t := NewTransaction(sender, *recipient, product, currency, value)
+func (bc *Blockchain) AddTransaction(t *Transaction, senderPublicKey *ecdsa.PublicKey, signature *utils.Signature) bool {
+	if t.Sender == MINING_SENDER {
 		bc.TransactionPool = append(bc.TransactionPool, t)
 		return true
 	}
 
+	oldValue := t.Value
+	if t.Currency != FC_CURRENCY {
+		oldValue = t.Value * 10
+	}
 	ttv := &utils.TransactionToVerify{
-		Product:  product,
-		Currency: currency,
-		Value:    value,
+		Product:  t.Product,
+		Currency: t.Currency,
+		Value:    oldValue,
 	}
 	if utils.VerifySignature(senderPublicKey, signature, ttv) {
-		var t *Transaction
-		if currency != FC_CURRENCY {
-			t = NewTransaction(FIDELITY_BLOCKCHAIN_ADDRESS, sender, product, currency, value/10.0)
-		} else {
-			t = NewTransaction(sender, FIDELITY_BLOCKCHAIN_ADDRESS, product, currency, value)
-		}
 		bc.TransactionPool = append(bc.TransactionPool, t)
 		return true
 	}

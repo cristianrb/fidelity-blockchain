@@ -14,6 +14,20 @@ type Server struct {
 	address string
 }
 
+type TransactionRequest struct {
+	SenderBlockchainAddress string  `json:"sender_blockchain_address"`
+	SenderPublicKey         string  `json:"sender_public_key"`
+	Signature               string  `json:"signature"`
+	Product                 string  `json:"product"`
+	Currency                string  `json:"currency"`
+	Value                   float32 `json:"value"`
+}
+
+type GetAmountResponse struct {
+	Recipient string  `json:"recipient"`
+	Amount    float32 `json:"amount"`
+}
+
 func NewServer(address string) *Server {
 	server := &Server{
 		address: address,
@@ -28,9 +42,6 @@ func (s *Server) GetBlockchain() *bc.Blockchain {
 	if !ok {
 		blockchain = bc.NewBlockChain("TBD")
 		cache["blockchain"] = blockchain
-		//log.Printf("private key %v\n", minersWallet.PrivateKeyStr())
-		//log.Printf("public key %v\n", minersWallet.PublicKeyStr())
-		//log.Printf("blockchain address %v\n", minersWallet.BlockchainAddress())
 	}
 
 	return blockchain
@@ -60,8 +71,7 @@ func errorResponse(err error) gin.H {
 }
 
 func (s *Server) getChain(ctx *gin.Context) {
-	blockchain := s.GetBlockchain()
-	ctx.JSON(http.StatusOK, blockchain)
+	ctx.JSON(http.StatusOK, s.GetBlockchain())
 }
 
 func (s *Server) createTransaction(ctx *gin.Context) {
@@ -75,7 +85,13 @@ func (s *Server) createTransaction(ctx *gin.Context) {
 
 	pubKey := utils.PublicKeyFromString(req.SenderPublicKey)
 	signature := utils.SignatureFromString(req.Signature)
-	isCreated := blockchain.AddTransaction(req.SenderBlockchainAddress, nil, req.Product, req.Currency, req.Value, pubKey, signature)
+	var t *bc.Transaction
+	if req.Currency != bc.FC_CURRENCY {
+		t = bc.NewTransaction(bc.FIDELITY_BLOCKCHAIN_ADDRESS, req.SenderBlockchainAddress, req.Product, req.Currency, req.Value/10.0)
+	} else {
+		t = bc.NewTransaction(req.SenderBlockchainAddress, bc.FIDELITY_BLOCKCHAIN_ADDRESS, req.Product, req.Currency, req.Value)
+	}
+	isCreated := blockchain.AddTransaction(t, pubKey, signature)
 
 	if isCreated {
 		ctx.Status(http.StatusCreated)
@@ -91,7 +107,7 @@ func (s *Server) getAmount(ctx *gin.Context) {
 	bcAddress := ctx.Query("blockchain_address")
 	amount := blockchain.CalculateTotalAmount(bcAddress)
 
-	ctx.JSON(http.StatusOK, AmountResponse{
+	ctx.JSON(http.StatusOK, GetAmountResponse{
 		Recipient: bcAddress,
 		Amount:    amount,
 	})
