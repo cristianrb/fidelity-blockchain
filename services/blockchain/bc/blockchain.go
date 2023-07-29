@@ -2,8 +2,6 @@ package bc
 
 import (
 	"crypto/ecdsa"
-	"crypto/sha256"
-	"encoding/json"
 	"fmt"
 	"github.com/cristianrb/fidelityblockchain/utils"
 	"strings"
@@ -58,29 +56,6 @@ func (bc *Blockchain) CopyTransactionPool() []*Transaction {
 	return transactions
 }
 
-func (bc *Blockchain) VerifySignature(senderPublicKey *ecdsa.PublicKey, s *utils.Signature, t *Transaction) bool {
-	t2 := struct {
-		Product  string  `json:"product"`
-		Currency string  `json:"currency"`
-		Value    float32 `json:"value"`
-	}{
-		Product:  t.Product,
-		Currency: t.Currency,
-		Value:    t.Value,
-	}
-	m, err := json.Marshal(t2)
-	if err != nil {
-		println("marshal err")
-		return false
-	}
-	println(fmt.Sprintf("%064x%064x", senderPublicKey.X.Bytes(),
-		senderPublicKey.Y.Bytes()))
-
-	println(fmt.Sprintf("%x%x", s.R, s.S))
-	h := sha256.Sum256(m)
-	return ecdsa.Verify(senderPublicKey, h[:], s.R, s.S)
-}
-
 func (bc *Blockchain) ValidProof(nonce int, previousHash [32]byte, transactions []*Transaction, difficulty int) bool {
 	zeros := strings.Repeat("0", difficulty)
 	guessBlock := Block{0, nonce, previousHash, transactions}
@@ -120,19 +95,21 @@ func (bc *Blockchain) AddTransaction(sender string, recipient *string, product, 
 		return true
 	}
 
-	var t *Transaction
-	if currency != FC_CURRENCY {
-		t = NewTransaction(FIDELITY_BLOCKCHAIN_ADDRESS, sender, product, currency, value/10.0)
-	} else {
-		t = NewTransaction(sender, FIDELITY_BLOCKCHAIN_ADDRESS, product, currency, value)
+	ttv := &utils.TransactionToVerify{
+		Product:  product,
+		Currency: currency,
+		Value:    value,
 	}
-
-	if bc.VerifySignature(senderPublicKey, signature, t) {
+	if utils.VerifySignature(senderPublicKey, signature, ttv) {
+		var t *Transaction
+		if currency != FC_CURRENCY {
+			t = NewTransaction(FIDELITY_BLOCKCHAIN_ADDRESS, sender, product, currency, value/10.0)
+		} else {
+			t = NewTransaction(sender, FIDELITY_BLOCKCHAIN_ADDRESS, product, currency, value)
+		}
 		bc.TransactionPool = append(bc.TransactionPool, t)
 		return true
 	}
-
-	println("not verified")
 
 	return false
 }

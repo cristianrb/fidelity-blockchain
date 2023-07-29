@@ -11,8 +11,8 @@ import (
 )
 
 type Wallet struct {
-	privateKey        *ecdsa.PrivateKey
-	publicKey         *ecdsa.PublicKey
+	PrivateKey        *ecdsa.PrivateKey
+	PublicKey         *ecdsa.PublicKey
 	BlockchainAddress string
 }
 
@@ -20,14 +20,14 @@ func NewWallet() *Wallet {
 	// 1. Creating ECDSA private key (32 bytes) public key (64 bytes)
 	privateKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	w := &Wallet{
-		privateKey: privateKey,
-		publicKey:  &privateKey.PublicKey,
+		PrivateKey: privateKey,
+		PublicKey:  &privateKey.PublicKey,
 	}
 
 	// 2. Perform SHA-256 hashing on the public key (32 bytes).
 	h2 := sha256.New()
-	h2.Write(w.publicKey.X.Bytes())
-	h2.Write(w.publicKey.Y.Bytes())
+	h2.Write(w.PublicKey.X.Bytes())
+	h2.Write(w.PublicKey.Y.Bytes())
 	digest2 := h2.Sum(nil)
 	// 3. Perform RIPEMD-160 hashing on the result of SHA-256 (20 bytes).
 	h3 := ripemd160.New()
@@ -59,9 +59,9 @@ func NewWallet() *Wallet {
 }
 
 func (w *Wallet) PrivateKeyStr() string {
-	return fmt.Sprintf("%x", w.privateKey.D.Bytes())
+	return fmt.Sprintf("%x", w.PrivateKey.D.Bytes())
 }
 
 func (w *Wallet) PublicKeyStr() string {
-	return fmt.Sprintf("%064x%064x", w.publicKey.X.Bytes(), w.publicKey.Y.Bytes())
+	return fmt.Sprintf("%064x%064x", w.PublicKey.X.Bytes(), w.PublicKey.Y.Bytes())
 }

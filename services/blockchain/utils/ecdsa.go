@@ -3,7 +3,9 @@ package utils
 import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
+	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"math/big"
 )
@@ -11,6 +13,12 @@ import (
 type Signature struct {
 	R *big.Int
 	S *big.Int
+}
+
+type TransactionToVerify struct {
+	Product  string  `json:"product"`
+	Currency string  `json:"currency"`
+	Value    float32 `json:"value"`
 }
 
 func (s *Signature) String() string {
@@ -45,4 +53,13 @@ func PrivateKeyFromString(s string, publicKey *ecdsa.PublicKey) *ecdsa.PrivateKe
 	var bi big.Int
 	_ = bi.SetBytes(b)
 	return &ecdsa.PrivateKey{PublicKey: *publicKey, D: &bi}
+}
+
+func VerifySignature(senderPublicKey *ecdsa.PublicKey, s *Signature, t *TransactionToVerify) bool {
+	m, err := json.Marshal(t)
+	if err != nil {
+		return false
+	}
+	h := sha256.Sum256(m)
+	return ecdsa.Verify(senderPublicKey, h[:], s.R, s.S)
 }
