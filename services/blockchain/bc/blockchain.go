@@ -95,6 +95,12 @@ func (bc *Blockchain) AddTransaction(t *Transaction, senderPublicKey *ecdsa.Publ
 		return true
 	}
 
+	println(t.Sender)
+	if t.Sender != FIDELITY_BLOCKCHAIN_ADDRESS && bc.HasPendingTransaction(t.Sender) {
+		println("pending transaction")
+		return false
+	}
+
 	oldValue := t.Value
 	if t.Currency != FC_CURRENCY {
 		oldValue = t.Value * 10
@@ -105,6 +111,11 @@ func (bc *Blockchain) AddTransaction(t *Transaction, senderPublicKey *ecdsa.Publ
 		Value:    oldValue,
 	}
 	if utils.VerifySignature(senderPublicKey, signature, ttv) {
+		if t.Currency == FC_CURRENCY {
+			if bc.CalculateTotalAmount(t.Sender) < t.Value {
+				return false
+			}
+		}
 		bc.TransactionPool = append(bc.TransactionPool, t)
 		return true
 	}
@@ -126,4 +137,14 @@ func (bc *Blockchain) CalculateTotalAmount(blockChainAddress string) float32 {
 		}
 	}
 	return totalAmount
+}
+
+func (bc *Blockchain) HasPendingTransaction(blockchainAddress string) bool {
+	for _, t := range bc.TransactionPool {
+		if t.Sender == blockchainAddress {
+			return true
+		}
+	}
+
+	return false
 }

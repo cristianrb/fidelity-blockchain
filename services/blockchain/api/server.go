@@ -98,7 +98,6 @@ func (s *Server) createTransaction(ctx *gin.Context) {
 		return
 	}
 
-	println(isCreated)
 	ctx.Status(http.StatusBadRequest)
 }
 
