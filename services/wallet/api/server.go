@@ -85,8 +85,16 @@ func (s *Server) createTransaction(ctx *gin.Context) {
 	resp, err := http.Post("http://localhost:5000/transactions", "application/json", buf)
 	defer resp.Body.Close()
 	if err != nil || resp.StatusCode < 200 || resp.StatusCode > 299 {
-		ctx.Status(http.StatusBadRequest)
+		var errorMap gin.H
+		decoder := json.NewDecoder(resp.Body)
+		err := decoder.Decode(&errorMap)
+		if err != nil {
+			ctx.Status(http.StatusBadRequest)
+			return
+		}
+		ctx.JSON(resp.StatusCode, errorMap)
 		return
+
 	}
 
 	ctx.Status(http.StatusCreated)

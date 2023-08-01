@@ -91,14 +91,12 @@ func (s *Server) createTransaction(ctx *gin.Context) {
 	} else {
 		t = bc.NewTransaction(req.SenderBlockchainAddress, bc.FIDELITY_BLOCKCHAIN_ADDRESS, req.Product, req.Currency, req.Value)
 	}
-	isCreated := blockchain.AddTransaction(t, pubKey, signature)
-
-	if isCreated {
-		ctx.Status(http.StatusCreated)
-		return
+	err := blockchain.AddTransaction(t, pubKey, signature)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 	}
 
-	ctx.Status(http.StatusBadRequest)
+	ctx.Status(http.StatusCreated)
 }
 
 func (s *Server) getAmount(ctx *gin.Context) {

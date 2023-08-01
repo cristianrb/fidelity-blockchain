@@ -2,6 +2,7 @@ package bc
 
 import (
 	"crypto/ecdsa"
+	"errors"
 	"fmt"
 	"github.com/cristianrb/fidelityblockchain/utils"
 	"strings"
@@ -89,16 +90,15 @@ func (bc *Blockchain) StartMining() {
 	_ = time.AfterFunc(time.Second*MINING_TIMER_SEC, bc.StartMining)
 }
 
-func (bc *Blockchain) AddTransaction(t *Transaction, senderPublicKey *ecdsa.PublicKey, signature *utils.Signature) bool {
+func (bc *Blockchain) AddTransaction(t *Transaction, senderPublicKey *ecdsa.PublicKey, signature *utils.Signature) error {
 	if t.Sender == MINING_SENDER {
 		bc.TransactionPool = append(bc.TransactionPool, t)
-		return true
+		return nil
 	}
 
 	println(t.Sender)
 	if t.Sender != FIDELITY_BLOCKCHAIN_ADDRESS && bc.HasPendingTransaction(t.Sender) {
-		println("pending transaction")
-		return false
+		return errors.New(fmt.Sprintf("pending transaction for %s", t.Sender))
 	}
 
 	oldValue := t.Value
@@ -113,14 +113,14 @@ func (bc *Blockchain) AddTransaction(t *Transaction, senderPublicKey *ecdsa.Publ
 	if utils.VerifySignature(senderPublicKey, signature, ttv) {
 		if t.Currency == FC_CURRENCY {
 			if bc.CalculateTotalAmount(t.Sender) < t.Value {
-				return false
+				return errors.New(fmt.Sprintf("%s has not enough coins", t.Sender))
 			}
 		}
 		bc.TransactionPool = append(bc.TransactionPool, t)
-		return true
+		return nil
 	}
 
-	return false
+	return errors.New("unknown error")
 }
 
 func (bc *Blockchain) CalculateTotalAmount(blockChainAddress string) float32 {
