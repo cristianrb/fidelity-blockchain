@@ -1,7 +1,9 @@
 package api
 
 import (
+	"fmt"
 	"github.com/cristianrb/fidelityblockchain/bc"
+	"github.com/cristianrb/fidelityblockchain/models"
 	"github.com/cristianrb/fidelityblockchain/utils"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -12,15 +14,7 @@ var cache = make(map[string]*bc.Blockchain)
 type Server struct {
 	router  *gin.Engine
 	address string
-}
-
-type TransactionRequest struct {
-	SenderBlockchainAddress string  `json:"sender_blockchain_address"`
-	SenderPublicKey         string  `json:"sender_public_key"`
-	Signature               string  `json:"signature"`
-	Product                 string  `json:"product"`
-	Currency                string  `json:"currency"`
-	Value                   float32 `json:"value"`
+	port    uint16
 }
 
 type GetAmountResponse struct {
@@ -28,9 +22,10 @@ type GetAmountResponse struct {
 	Amount    float32 `json:"amount"`
 }
 
-func NewServer(address string) *Server {
+func NewServer(address string, port uint16) *Server {
 	server := &Server{
 		address: address,
+		port:    port,
 	}
 	server.setupRouter()
 
@@ -40,7 +35,7 @@ func NewServer(address string) *Server {
 func (s *Server) GetBlockchain() *bc.Blockchain {
 	blockchain, ok := cache["blockchain"]
 	if !ok {
-		blockchain = bc.NewBlockChain("TBD")
+		blockchain = bc.NewBlockChain("TBD", s.port)
 		cache["blockchain"] = blockchain
 	}
 
@@ -53,6 +48,9 @@ func (s *Server) setupRouter() {
 	router.GET("/chain", s.getChain)
 	router.GET("/amount", s.getAmount)
 	router.POST("/transactions", s.createTransaction)
+	router.PUT("/transactions", s.updateTransactions)
+	router.DELETE("/transactions", s.deleteTransactions)
+	router.PUT("/consensus", s.consensus)
 
 	s.GetBlockchain().Start()
 
@@ -61,7 +59,7 @@ func (s *Server) setupRouter() {
 
 // Start runs the HTTP server on a specific address.
 func (s *Server) Start() error {
-	return s.router.Run(s.address)
+	return s.router.Run(fmt.Sprintf("%s:%d", s.address, s.port))
 }
 
 func errorResponse(err error) gin.H {
@@ -77,7 +75,7 @@ func (s *Server) getChain(ctx *gin.Context) {
 func (s *Server) createTransaction(ctx *gin.Context) {
 	blockchain := s.GetBlockchain()
 
-	var req TransactionRequest
+	var req models.TransactionRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
@@ -85,18 +83,38 @@ func (s *Server) createTransaction(ctx *gin.Context) {
 
 	pubKey := utils.PublicKeyFromString(req.SenderPublicKey)
 	signature := utils.SignatureFromString(req.Signature)
-	var t *bc.Transaction
-	if req.Currency != bc.FC_CURRENCY {
-		t = bc.NewTransaction(bc.FIDELITY_BLOCKCHAIN_ADDRESS, req.SenderBlockchainAddress, req.Product, req.Currency, req.Value/10.0)
-	} else {
-		t = bc.NewTransaction(req.SenderBlockchainAddress, bc.FIDELITY_BLOCKCHAIN_ADDRESS, req.Product, req.Currency, req.Value)
+	t := bc.NewTransaction(req.SenderBlockchainAddress, bc.FIDELITY_BLOCKCHAIN_ADDRESS, req.Product, req.Currency, req.Value)
+	err := blockchain.CreateTransaction(t, pubKey, signature)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 	}
+
+	ctx.Status(http.StatusCreated)
+}
+
+func (s *Server) updateTransactions(ctx *gin.Context) {
+	blockchain := s.GetBlockchain()
+
+	var req models.TransactionRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	pubKey := utils.PublicKeyFromString(req.SenderPublicKey)
+	signature := utils.SignatureFromString(req.Signature)
+	t := bc.NewTransaction(req.SenderBlockchainAddress, bc.FIDELITY_BLOCKCHAIN_ADDRESS, req.Product, req.Currency, req.Value)
 	err := blockchain.AddTransaction(t, pubKey, signature)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 	}
 
 	ctx.Status(http.StatusCreated)
+}
+
+func (s *Server) deleteTransactions(ctx *gin.Context) {
+	s.GetBlockchain().ClearTransactionPool()
+	ctx.Status(http.StatusAccepted)
 }
 
 func (s *Server) getAmount(ctx *gin.Context) {
@@ -108,4 +126,9 @@ func (s *Server) getAmount(ctx *gin.Context) {
 		Recipient: bcAddress,
 		Amount:    amount,
 	})
+}
+
+func (s *Server) consensus(ctx *gin.Context) {
+	s.GetBlockchain().ResolveConflicts()
+	ctx.Status(http.StatusAccepted)
 }

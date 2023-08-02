@@ -13,6 +13,7 @@ import (
 type Server struct {
 	router  *gin.Engine
 	address string
+	gateway string
 }
 
 type GetAmountResponse struct {
@@ -20,9 +21,10 @@ type GetAmountResponse struct {
 	Amount    float32 `json:"amount"`
 }
 
-func NewServer(address string) *Server {
+func NewServer(address string, gateway string) *Server {
 	server := &Server{
 		address: address,
+		gateway: gateway,
 	}
 	server.setupRouter()
 
@@ -82,7 +84,7 @@ func (s *Server) createTransaction(ctx *gin.Context) {
 	m, _ := json.Marshal(bt)
 	buf := bytes.NewBuffer(m)
 
-	resp, err := http.Post("http://localhost:5000/transactions", "application/json", buf)
+	resp, err := http.Post(fmt.Sprintf("http://%s/transactions", s.gateway), "application/json", buf)
 	defer resp.Body.Close()
 	if err != nil || resp.StatusCode < 200 || resp.StatusCode > 299 {
 		var errorMap gin.H
@@ -102,7 +104,7 @@ func (s *Server) createTransaction(ctx *gin.Context) {
 
 func (s *Server) getAmount(ctx *gin.Context) {
 	blockchainAddress := ctx.Query("blockchain_address")
-	url := fmt.Sprintf("http://localhost:5000/amount?blockchain_address=%s", blockchainAddress)
+	url := fmt.Sprintf("http://%s/amount?blockchain_address=%s", s.gateway, blockchainAddress)
 	resp, err := http.Get(url)
 	defer resp.Body.Close()
 	if err != nil {
